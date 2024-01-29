@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link rel="icon" type="image/x-icon" href="https://www.timonportfolio.com/favicon.ico">
+    <title>Kuvanparannussovellus</title>
+  </head>
+  <body>
+    <div class="container">
+      <header>Kuvan Parantaja</header>
+      <form action="#">
+        <input id="imageInput"  class="file-input" type="file" name="file"  accept=".jpg, .jpeg, .png" hidden />
+        <i class="fa-solid fa-file-import"></i>
+        <p>Selaa tiedostoa ladattavaksi</p>
+        <p class="information">* Voit parantaa vain yksi kuva kerralla</p>
+      </form>
+   
+      <section class="progress-area"></section>
+      <section class="uploaded-area"></section>
+      <div id="enhancedPreview"></div>
+      <button id="uploadButton">Paranna kuva</button>
+    </div>
+   
+
+    
+    <script>
+       const[form,fileInput,progressArea,uploadedArea]=["form",".file-input",".progress-area",".uploaded-area"].map(e=>document.querySelector(e));let[selectedFile,selectedFileName]=[null,null],uploadQueue=[],imageCounter=0;async function handleFileUpload(e,a){uploadQueue.push({file:e,name:a}),1===uploadQueue.length&&await processQueue(),resetUploadButton()}async function processQueue(){for(;uploadQueue.length>0;){let{file:e,name:a}=uploadQueue[0],t=new FormData;t.append("file",e);try{let l=await fetch("/upload",{method:"POST",body:t});if(l.ok){imageCounter++;let i=document.getElementById("enhancedPreview"),n=await l.blob(),d=URL.createObjectURL(n),s=n.size,o=document.createElement("div");o.className="download-container";let u=document.createElement("i");u.className="fa-solid fa-circle-down";let r=document.createElement("a"),c="Uusi_"+a;r.href=d,r.download=c,r.className="download-link",r.textContent=` ${imageCounter}. Lataa: ${c} [${formatSize(s)}]`;let p=document.createElement("i");p.className="fa-solid fa-xmark delete-btn",p.addEventListener("click",function(){i.removeChild(o)}),o.appendChild(u),o.appendChild(r),o.appendChild(p),i.appendChild(o)}else throw Error("Lataus ep\xe4onnistui, tila: "+l.status)}catch(m){m instanceof TypeError&&m.message.includes("Failed to fetch")?(console.error("CORS-virhe: ",m),alert("CORS-virhe tapahtui. Tarkista palvelimen asetukset.")):(console.error("Virhe tiedoston latauksessa: ",m),alert("Virhe tapahtui: "+m.message))}uploadQueue.shift()}}function resetUploadButton(){let e=document.getElementById("uploadButton");e.disabled=!1,e.textContent="Paranna kuva",[selectedFile,selectedFileName]=[null,null]}function formatSize(e){return`${(e<10485760?e/1024:e/1048576).toFixed(2)} ${e<10485760?"KB":"MB"}`}function showUploadedFile(e,a){let t=document.createElement("li");t.className="row",t.innerHTML=`<div class="content upload"><i class="fa-regular fa-file-image"></i> <div class="details"><span class="name">${e} - Ladattu</span><span class="size">${formatSize(a)}</span></div> </div> <i class="fa-solid fa-xmark delete-btn"></i>`;let l=t.querySelector(".delete-btn");l.addEventListener("click",function(){uploadedArea.removeChild(t),selectedFileName===e&&([selectedFile,selectedFileName]=[null,null])}),uploadedArea.appendChild(t)}form.addEventListener("click",()=>fileInput.click()),fileInput.onchange=({target:{files:[e]}})=>{if(e){let a=e.name.length>=12?`${e.name.split(".")[0].substring(0,13)}... .${e.name.split(".")[1]}`:e.name;[selectedFile,selectedFileName]=[e,a],showUploadedFile(a,e.size)}},document.getElementById("uploadButton").addEventListener("click",async function(){selectedFile&&(this.disabled=!0,this.textContent="Pieni hetki...",await handleFileUpload(selectedFile,selectedFileName))});
+    </script>
+  </body>
+</html>
